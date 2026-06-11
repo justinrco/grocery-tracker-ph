@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Compare · Grocery Tracker{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Compare prices</h1>
+
+<form class="mb-4" method="get">
+  <div class="input-group">
+    <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search by product, brand, or category…" autofocus>
+    <button class="btn btn-success">Compare</button>
+    {% if q %}<a class="btn btn-outline-secondary" href="{{ url_for('compare') }}">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if q %}
+  {% if unit_ranking %}
+    <div class="card border-success mb-4">
+      <div class="card-header bg-success text-white fw-semibold">Cheapest by unit price (across all matches)</div>
+      {% for family, items in unit_ranking %}
+        <div class="card-body pb-1">
+          <div class="text-muted small text-uppercase mb-1">{{ family }} — best value per {{ items[0][1].unit_label[1:] }}</div>
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Rank</th><th>Product</th><th>Store</th><th class="text-end">Unit price</th><th class="text-end">Pack price</th></tr></thead>
+            <tbody>
+              {% for unit_price, product, entry in items %}
+              <tr class="{{ 'table-success' if loop.first else '' }}">
+                <td>{{ loop.index }}{% if loop.first %} <span class="badge bg-success">Best value</span>{% endif %}</td>
+                <td><a class="text-decoration-none" href="{{ url_for('product_detail', product_id=product.id) }}">{{ product.display_name }}</a></td>
+                <td><a class="text-decoration-none" href="{{ url_for('store_detail', store_id=entry.store.id) }}">{{ entry.store.name }}</a></td>
+                <td class="text-end fw-semibold">{{ unit_price | peso }}<small class="text-muted">{{ product.unit_label }}</small></td>
+                <td class="text-end text-muted">{{ entry.price | peso }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if results %}
+    <h2 class="h5 mb-2">By product — cheapest store first</h2>
+    {% for product, ranked in results %}
+    <div class="card mb-4">
+      <div class="card-header bg-white d-flex justify-content-between">
+        <a class="fw-semibold text-decoration-none" href="{{ url_for('product_detail', product_id=product.id) }}">{{ product.display_name }}</a>
+        <span class="text-muted">{{ product.category or "" }}</span>
+      </div>
+      {% if ranked %}
+      <table class="table mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Rank</th><th>Store</th><th>Location</th>
+            <th class="text-end">Price</th>
+            {% if product.unit_label %}<th class="text-end">Unit price ({{ product.unit_label }})</th>{% endif %}
+            <th>Recorded</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in ranked %}
+          <tr class="{{ 'table-success' if loop.first else '' }}">
+            <td>{{ loop.index }}{% if loop.first %} <span class="badge bg-success">Cheapest</span>{% endif %}</td>
+            <td><a class="text-decoration-none" href="{{ url_for('store_detail', store_id=entry.store.id) }}">{{ entry.store.name }}</a></td>
+            <td>{{ entry.store.location or "—" }}</td>
+            <td class="text-end fw-semibold">{{ entry.price | peso }}</td>
+            {% if product.unit_label %}<td class="text-end text-muted">{{ entry.unit_price | peso if entry.unit_price else "—" }}</td>{% endif %}
+            <td class="text-muted small">{{ entry.updated_at | humanize }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="card-body text-muted">No store has priced this product yet.</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-muted">No products match “{{ q }}”.</p>
+  {% endif %}
+{% else %}
+  <p class="text-muted">Type a product name above to see which store is cheapest.</p>
+{% endif %}
+{% endblock %}

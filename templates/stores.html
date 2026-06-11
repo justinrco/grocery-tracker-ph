@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Stores · Grocery Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Stores</h1>
+  <button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addStore">+ Add store</button>
+</div>
+
+<div class="collapse mb-4" id="addStore">
+  <div class="card card-body">
+    <form method="post" action="{{ url_for('create_store') }}" class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label">Name <span class="text-danger">*</span></label>
+        <input class="form-control" name="name" required placeholder="e.g. SM Supermarket">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Location</label>
+        <input class="form-control" name="location" placeholder="e.g. Cebu City">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Notes</label>
+        <input class="form-control" name="notes" placeholder="optional">
+      </div>
+      <div class="col-12"><button class="btn btn-success">Save store</button></div>
+    </form>
+  </div>
+</div>
+
+<form class="mb-3" method="get">
+  <div class="input-group">
+    <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search stores by name or location…">
+    <button class="btn btn-outline-secondary">Search</button>
+    {% if q %}<a class="btn btn-outline-secondary" href="{{ url_for('list_stores') }}">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if stores %}
+<div class="table-responsive">
+  <table class="table table-hover bg-white align-middle">
+    <thead><tr><th>Name</th><th>Location</th><th>Products priced</th><th></th></tr></thead>
+    <tbody>
+      {% for store in stores %}
+      <tr>
+        <td><a href="{{ url_for('store_detail', store_id=store.id) }}" class="fw-semibold text-decoration-none">{{ store.name }}</a></td>
+        <td>{{ store.location or "—" }}</td>
+        <td>{{ counts.get(store.id, 0) }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('store_detail', store_id=store.id) }}">Open</a>
+          <form class="d-inline" method="post" action="{{ url_for('delete_store', store_id=store.id) }}"
+                onsubmit="return confirm('Delete “{{ store.name }}” and all its prices?');">
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="text-muted">{% if q %}No stores match “{{ q }}”.{% else %}No stores yet — add your first one above.{% endif %}</p>
+{% endif %}
+{% endblock %}

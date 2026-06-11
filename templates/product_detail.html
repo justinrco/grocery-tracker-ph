@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ product.display_name }} · Grocery Tracker{% endblock %}
+
+{% macro size_fields(amount='', unit='') %}
+  <div class="input-group">
+    <input class="form-control" name="size_amount" inputmode="decimal" placeholder="Amount" value="{{ amount }}" style="max-width:7rem">
+    <select class="form-select" name="size_unit">
+      <option value="">—</option>
+      {% for u in unit_choices %}<option value="{{ u }}" {% if u == unit %}selected{% endif %}>{{ u }}</option>{% endfor %}
+    </select>
+  </div>
+{% endmacro %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('list_products') }}">Products</a></li>
+    <li class="breadcrumb-item active">{{ product.display_name }}</li>
+  </ol>
+</nav>
+
+<div class="page-header d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ product.display_name }}</h1>
+    <div class="text-muted">{{ product.category or "Uncategorized" }}</div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('product_history', product_id=product.id) }}">View history</a>
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#editProduct">Edit</button>
+    <form class="d-inline" method="post" action="{{ url_for('delete_product', product_id=product.id) }}"
+          onsubmit="return confirm('Delete this product from the catalog and all stores?');">
+      <button class="btn btn-outline-danger btn-sm">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="collapse mb-4" id="editProduct">
+  <div class="card card-body">
+    <form method="post" action="{{ url_for('edit_product', product_id=product.id) }}" class="row g-2">
+      <div class="col-md-4"><label class="form-label">Name</label><input class="form-control" name="name" value="{{ product.name }}" required></div>
+      <div class="col-md-3"><label class="form-label">Brand</label><input class="form-control" name="brand" value="{{ product.brand or '' }}"></div>
+      <div class="col-md-2"><label class="form-label">Size</label>{{ size_fields(product.size_amount or '', product.size_unit or '') }}</div>
+      <div class="col-md-3"><label class="form-label">Category</label><input class="form-control category-select" name="category" list="known-categories" value="{{ product.category or '' }}" autocomplete="off"></div>
+      <div class="col-12"><button class="btn btn-success">Save changes</button></div>
+    </form>
+  </div>
+</div>
+
+<h2 class="h5">Current price by store (cheapest first)</h2>
+{% if prices %}
+<div class="table-responsive">
+  <table class="table bg-white align-middle">
+    <thead>
+      <tr>
+        <th>Rank</th><th>Store</th><th>Location</th>
+        <th class="text-end">Price</th>
+        {% if product.unit_label %}<th class="text-end">Unit price ({{ product.unit_label }})</th>{% endif %}
+        <th>Recorded</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in prices %}
+      <tr class="{{ 'table-success' if loop.first else '' }}">
+        <td>{{ loop.index }}{% if loop.first %} <span class="badge bg-success">Cheapest</span>{% endif %}</td>
+        <td><a class="text-decoration-none" href="{{ url_for('store_detail', store_id=entry.store.id) }}">{{ entry.store.name }}</a></td>
+        <td>{{ entry.store.location or "—" }}</td>
+        <td class="text-end fw-semibold">{{ entry.price | peso }}</td>
+        {% if product.unit_label %}<td class="text-end text-muted">{{ entry.unit_price | peso if entry.unit_price else "—" }}</td>{% endif %}
+        <td class="text-muted small">{{ entry.updated_at | humanize }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if not product.unit_label %}
+  <p class="small text-muted">Tip: set a structured size (amount + unit) via Edit to enable unit-price comparison.</p>
+{% endif %}
+{% else %}
+  <p class="text-muted">No store has priced this product yet. Add a price from a store page.</p>
+{% endif %}
+{% endblock %}

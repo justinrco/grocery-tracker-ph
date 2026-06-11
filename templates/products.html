@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Products · Grocery Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Product catalog</h1>
+  <button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#addProduct">+ Add product</button>
+</div>
+
+<div class="collapse mb-4" id="addProduct">
+  <div class="card card-body">
+    <form method="post" action="{{ url_for('create_product') }}" class="row g-2">
+      <div class="col-md-4"><label class="form-label">Name <span class="text-danger">*</span></label><input class="form-control" name="name" required placeholder="e.g. Pancit Canton"></div>
+      <div class="col-md-3"><label class="form-label">Brand</label><input class="form-control" name="brand" placeholder="e.g. Lucky Me"></div>
+      <div class="col-md-2">
+        <label class="form-label">Size</label>
+        <div class="input-group">
+          <input class="form-control" name="size_amount" inputmode="decimal" placeholder="Amount">
+          <select class="form-select" name="size_unit">
+            <option value="">—</option>
+            {% for u in unit_choices %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-md-3"><label class="form-label">Category</label><input class="form-control category-select" name="category" list="known-categories" placeholder="e.g. Noodles" autocomplete="off"></div>
+
+      <div class="col-12"><hr class="my-1"><small class="text-muted">Optional: tie this product to a store with a price.</small></div>
+      <div class="col-md-4">
+        <label class="form-label">Store</label>
+        <select class="form-select" name="store_id" id="storeSelect" onchange="toggleNewStore(this)">
+          <option value="">— Add a new store below —</option>
+          {% for s in stores %}<option value="{{ s.id }}">{{ s.name }}{% if s.location %} — {{ s.location }}{% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Price (₱)</label>
+        <input class="form-control" name="price" inputmode="decimal" placeholder="required if a store is set">
+      </div>
+      <div id="newStore" class="row g-2 col-12">
+        <div class="col-md-4"><input class="form-control" name="store_name" placeholder="New store name e.g. Puregold"></div>
+        <div class="col-md-4"><input class="form-control" name="store_location" placeholder="Location e.g. Cebu City"></div>
+      </div>
+
+      <div class="col-12"><button class="btn btn-success">Save product</button></div>
+    </form>
+    <script>
+      function toggleNewStore(sel) {
+        document.getElementById('newStore').style.display = sel.value ? 'none' : 'flex';
+      }
+      toggleNewStore(document.getElementById('storeSelect'));
+    </script>
+  </div>
+</div>
+
+<form class="mb-3" method="get">
+  <div class="input-group">
+    <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search products by name, brand or category…">
+    <button class="btn btn-outline-secondary">Search</button>
+    {% if q %}<a class="btn btn-outline-secondary" href="{{ url_for('list_products') }}">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if products %}
+<div class="table-responsive">
+  <table class="table table-hover bg-white align-middle">
+    <thead><tr><th>Product</th><th>Category</th><th>Stores priced</th><th></th></tr></thead>
+    <tbody>
+      {% for product in products %}
+      <tr>
+        <td><a class="fw-semibold text-decoration-none" href="{{ url_for('product_detail', product_id=product.id) }}">{{ product.display_name }}</a></td>
+        <td>{{ product.category or "—" }}</td>
+        <td>{{ counts.get(product.id, 0) }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('product_detail', product_id=product.id) }}">Compare prices</a>
+          <form class="d-inline" method="post" action="{{ url_for('delete_product', product_id=product.id) }}"
+                onsubmit="return confirm('Delete “{{ product.display_name }}” from the catalog and all stores?');">
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="text-muted">{% if q %}No products match “{{ q }}”.{% else %}No products yet — add one above or from a store page.{% endif %}</p>
+{% endif %}
+{% endblock %}

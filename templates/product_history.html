@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ product.display_name }} history · Grocery Tracker{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('list_products') }}">Products</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('product_detail', product_id=product.id) }}">{{ product.display_name }}</a></li>
+    <li class="breadcrumb-item active">History</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h3 mb-1">Price history</h1>
+    <div class="text-muted">{{ product.display_name }}</div>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('product_detail', product_id=product.id) }}">Back to product</a>
+</div>
+
+{% if stores %}
+<form class="mb-3" method="get">
+  <div class="input-group" style="max-width:28rem">
+    <label class="input-group-text" for="storeFilter">Store</label>
+    <select class="form-select" id="storeFilter" name="store" onchange="this.form.submit()">
+      <option value="">All stores</option>
+      {% for s in stores %}
+      <option value="{{ s.id }}" {% if store and s.id == store.id %}selected{% endif %}>{{ s.name }}{% if s.location %} — {{ s.location }}{% endif %}</option>
+      {% endfor %}
+    </select>
+    {% if store %}<a class="btn btn-outline-secondary" href="{{ url_for('product_history', product_id=product.id) }}">Clear</a>{% endif %}
+  </div>
+</form>
+{% endif %}
+
+{% if observations %}
+<div class="table-responsive">
+  <table class="table table-hover bg-white align-middle">
+    <thead>
+      <tr>
+        <th>Recorded</th>
+        <th>Store</th>
+        <th class="text-end">Price</th>
+        {% if product.unit_label %}<th class="text-end">Unit price ({{ product.unit_label }})</th>{% endif %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in observations %}
+      <tr>
+        <td>
+          <div>{{ entry.updated_at.strftime('%Y-%m-%d %H:%M') }}</div>
+          <small class="text-muted">{{ entry.updated_at | humanize }}</small>
+        </td>
+        <td><a class="text-decoration-none" href="{{ url_for('store_detail', store_id=entry.store.id) }}">{{ entry.store.name }}</a></td>
+        <td class="text-end fw-semibold">{{ entry.price | peso }}</td>
+        {% if product.unit_label %}<td class="text-end text-muted">{{ entry.unit_price | peso if entry.unit_price else "—" }}</td>{% endif %}
+        <td class="text-end">
+          <form class="d-inline" method="post" action="{{ url_for('delete_price', price_id=entry.id) }}"
+                onsubmit="return confirm('Delete this single observation? Older observations (if any) will remain.');">
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="text-muted">
+    {% if store %}No observations for this product at {{ store.name }} yet.{% else %}No price observations recorded yet.{% endif %}
+  </p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ store.name }} · Grocery Tracker{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('list_stores') }}">Stores</a></li>
+    <li class="breadcrumb-item active">{{ store.name }}</li>
+  </ol>
+</nav>
+
+<div class="page-header d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ store.name }}</h1>
+    <div class="text-muted">{{ store.location or "No location set" }}</div>
+    {% if store.notes %}<div class="small text-muted">{{ store.notes }}</div>{% endif %}
+  </div>
+  <div class="actions">
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#editStore">Edit store</button>
+    <form class="d-inline" method="post" action="{{ url_for('delete_store', store_id=store.id) }}"
+          onsubmit="return confirm('Delete this store and all its prices?');">
+      <button class="btn btn-outline-danger btn-sm">Delete store</button>
+    </form>
+  </div>
+</div>
+
+<div class="collapse mb-4" id="editStore">
+  <div class="card card-body">
+    <form method="post" action="{{ url_for('edit_store', store_id=store.id) }}" class="row g-2">
+      <div class="col-md-4"><label class="form-label">Name</label><input class="form-control" name="name" value="{{ store.name }}" required></div>
+      <div class="col-md-4"><label class="form-label">Location</label><input class="form-control" name="location" value="{{ store.location or '' }}"></div>
+      <div class="col-md-4"><label class="form-label">Notes</label><input class="form-control" name="notes" value="{{ store.notes or '' }}"></div>
+      <div class="col-12"><button class="btn btn-success">Save changes</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-white fw-semibold">Record a product price</div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('record_price') }}" class="row g-2 align-items-end">
+      <input type="hidden" name="store_id" value="{{ store.id }}">
+      <div class="col-md-5">
+        <label class="form-label">Existing product</label>
+        <select class="form-select" name="product_id" id="productSelect" onchange="toggleNew(this)">
+          <option value="">— Create new product below —</option>
+          {% for p in products %}<option value="{{ p.id }}">{{ p.display_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Price (₱)</label>
+        <input class="form-control" name="price" inputmode="decimal" placeholder="e.g. 45.50" required>
+      </div>
+      <div class="col-md-3"><button class="btn btn-success w-100">Save price</button></div>
+
+      <div id="newProduct" class="row g-2 mt-1">
+        <div class="col-12"><hr class="my-1"><small class="text-muted">New product details (used only if no existing product is selected)</small></div>
+        <div class="col-md-4"><input class="form-control" name="name" placeholder="Name e.g. Pancit Canton"></div>
+        <div class="col-md-3"><input class="form-control" name="brand" placeholder="Brand e.g. Lucky Me"></div>
+        <div class="col-md-2">
+          <div class="input-group">
+            <input class="form-control" name="size_amount" inputmode="decimal" placeholder="Amount">
+            <select class="form-select" name="size_unit">
+              <option value="">—</option>
+              {% for u in unit_choices %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-md-3"><input class="form-control category-select" name="category" list="known-categories" placeholder="Category e.g. Noodles" autocomplete="off"></div>
+      </div>
+    </form>
+    <small class="text-muted d-block mt-2">Saving a price for the same product appends a new observation — old prices are kept for history.</small>
+  </div>
+</div>
+
+<h2 class="h5">Current prices at this store</h2>
+{% if prices %}
+<div class="table-responsive">
+  <table class="table table-hover bg-white align-middle">
+    <thead>
+      <tr>
+        <th>Product</th><th>Category</th>
+        <th class="text-end">Price</th>
+        <th class="text-end">Unit price</th>
+        <th>Recorded</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in prices %}
+      <tr>
+        <td><a class="text-decoration-none" href="{{ url_for('product_detail', product_id=entry.product.id) }}">{{ entry.product.display_name }}</a></td>
+        <td>{{ entry.product.category or "—" }}</td>
+        <td class="text-end fw-semibold">{{ entry.price | peso }}</td>
+        <td class="text-end text-muted">
+          {% if entry.unit_price %}{{ entry.unit_price | peso }}<small>{{ entry.product.unit_label }}</small>{% else %}—{% endif %}
+        </td>
+        <td class="text-muted small">{{ entry.updated_at | humanize }}</td>
+        <td class="text-end" style="white-space:nowrap">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('product_history', product_id=entry.product.id, store=store.id) }}">History</a>
+          <form class="d-inline" method="post" action="{{ url_for('remove_product_from_store') }}"
+                onsubmit="return confirm('Remove “{{ entry.product.display_name }}” and ALL its price history from {{ store.name }}?');">
+            <input type="hidden" name="store_id" value="{{ store.id }}">
+            <input type="hidden" name="product_id" value="{{ entry.product.id }}">
+            <button class="btn btn-sm btn-outline-danger">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="text-muted">No products priced at this store yet — add one above.</p>
+{% endif %}
+
+<script>
+  function toggleNew(sel) {
+    document.getElementById('newProduct').style.display = sel.value ? 'none' : 'flex';
+  }
+  toggleNew(document.getElementById('productSelect'));
+</script>
+{% endblock %}
