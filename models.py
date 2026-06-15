@@ -31,12 +31,13 @@ def _enable_sqlite_fk(dbapi_connection, connection_record):
 # (family, multiplier_to_base, base_unit_label, per_n_of_base_for_display)
 # e.g. kg → mass family, 1000g per kg, display "₱X / 100g".
 UNIT_INFO = {
-    "g":     ("mass",   Decimal(1),    "g",     Decimal(100)),
-    "kg":    ("mass",   Decimal(1000), "g",     Decimal(100)),
-    "mL":    ("volume", Decimal(1),    "mL",    Decimal(100)),
-    "L":     ("volume", Decimal(1000), "mL",    Decimal(100)),
-    "piece": ("count",  Decimal(1),    "piece", Decimal(1)),
-    "pack":  ("count",  Decimal(1),    "pack",  Decimal(1)),
+    "g":     ("mass",   Decimal(1),             "g",     Decimal(100)),
+    "kg":    ("mass",   Decimal(1000),          "g",     Decimal(100)),
+    "mL":    ("volume", Decimal(1),             "mL",    Decimal(100)),
+    "L":     ("volume", Decimal(1000),          "mL",    Decimal(100)),
+    "gallon":("volume", Decimal("3785.411784"), "mL",    Decimal(100)),  # US gallon
+    "piece": ("count",  Decimal(1),             "piece", Decimal(1)),
+    "pack":  ("count",  Decimal(1),             "pack",  Decimal(1)),
 }
 UNIT_CHOICES = list(UNIT_INFO.keys())
 
@@ -50,7 +51,7 @@ def parse_size_string(text):
     if not text:
         return None, None
     m = re.match(
-        r"^\s*(\d+(?:\.\d+)?)\s*(kg|g|ml|mL|ML|L|l|pcs?|piece|pack)\s*$",
+        r"^\s*(\d+(?:\.\d+)?)\s*(kg|gallons?|gals?|g|ml|mL|ML|L|l|pcs?|piece|pack)\s*$",
         text,
     )
     if not m:
@@ -61,6 +62,7 @@ def parse_size_string(text):
         "g": "g", "kg": "kg",
         "ml": "mL", "mL": "mL", "ML": "mL",
         "l": "L", "L": "L",
+        "gal": "gallon", "gals": "gallon", "gallon": "gallon", "gallons": "gallon",
         "pc": "piece", "pcs": "piece", "piece": "piece",
         "pack": "pack",
     }

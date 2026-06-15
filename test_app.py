@@ -144,6 +144,25 @@ def test_unit_price_normalizes_across_sizes(client):
     assert small.unit_family == big.unit_family == "mass"
 
 
+def test_gallon_unit_price_compares_with_litres(client):
+    from models import parse_size_string
+
+    gallon = _make_product("Distilled Water gal", brand="Wilkins",
+                           size_amount=Decimal("1"), size_unit="gallon")
+    litre = _make_product("Distilled Water 1L", brand="Wilkins",
+                          size_amount=Decimal("1"), size_unit="L")
+
+    # 1 US gallon = 3785.411784 mL → ₱100 / gallon ≈ ₱2.6417 / 100mL
+    # 1 L = 1000 mL → ₱30 / L = ₱3.00 / 100mL
+    assert gallon.unit_family == litre.unit_family == "volume"
+    assert gallon.unit_label == "/100mL"
+    assert round(gallon.unit_price(Decimal("100")), 4) == Decimal("2.6417")
+    assert litre.unit_price(Decimal("30")) == Decimal("3.0000")
+    # free-text "1 gallon" migrates to the structured unit
+    assert parse_size_string("1 gallon") == (Decimal("1"), "gallon")
+    assert parse_size_string("5 gal") == (Decimal("5"), "gallon")
+
+
 def test_unit_price_is_none_without_structured_size(client):
     p = Product(name="Mystery", size="big")
     db.session.add(p)

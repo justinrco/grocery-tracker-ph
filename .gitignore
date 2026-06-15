@@ -6,3 +6,4 @@ venv/
 .venv/
 instance/
 .pytest_cache/
+.claude/settings.local.json
