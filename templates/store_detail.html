@@ -42,7 +42,7 @@
       <input type="hidden" name="store_id" value="{{ store.id }}">
       <div class="col-md-5">
         <label class="form-label">Existing product</label>
-        <select class="form-select" name="product_id" id="productSelect" onchange="toggleNew(this)">
+        <select class="form-select plain-select" name="product_id" id="productSelect" onchange="toggleNew(this)">
           <option value="">— Create new product below —</option>
           {% for p in products %}<option value="{{ p.id }}">{{ p.display_name }}</option>{% endfor %}
         </select>
@@ -60,7 +60,7 @@
         <div class="col-md-2">
           <div class="input-group">
             <input class="form-control" name="size_amount" inputmode="decimal" placeholder="Amount">
-            <select class="form-select" name="size_unit">
+            <select class="form-select plain-select" name="size_unit">
               <option value="">—</option>
               {% for u in unit_choices %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
             </select>

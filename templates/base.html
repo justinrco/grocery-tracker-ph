@@ -75,6 +75,17 @@
           }
         });
       });
+
+      // Plain (non-searchable) dropdowns: enhance so a long list (units, stores,
+      // products) scrolls past ~5 items instead of running down the page. No
+      // text input, preserving the simple click-to-pick feel of a <select>.
+      document.querySelectorAll('select.plain-select').forEach(function (el) {
+        new TomSelect(el, {
+          controlInput: null,
+          allowEmptyOption: true,
+          maxOptions: null,
+        });
+      });
     });
   </script>
 </body>

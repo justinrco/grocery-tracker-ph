@@ -16,7 +16,7 @@
         <label class="form-label">Size</label>
         <div class="input-group">
           <input class="form-control" name="size_amount" inputmode="decimal" placeholder="Amount">
-          <select class="form-select" name="size_unit">
+          <select class="form-select plain-select" name="size_unit">
             <option value="">—</option>
             {% for u in unit_choices %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
           </select>
@@ -27,7 +27,7 @@
       <div class="col-12"><hr class="my-1"><small class="text-muted">Optional: tie this product to a store with a price.</small></div>
       <div class="col-md-4">
         <label class="form-label">Store</label>
-        <select class="form-select" name="store_id" id="storeSelect" onchange="toggleNewStore(this)">
+        <select class="form-select plain-select" name="store_id" id="storeSelect" onchange="toggleNewStore(this)">
           <option value="">— Add a new store below —</option>
           {% for s in stores %}<option value="{{ s.id }}">{{ s.name }}{% if s.location %} — {{ s.location }}{% endif %}</option>{% endfor %}
         </select>

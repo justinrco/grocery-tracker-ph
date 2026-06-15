@@ -4,7 +4,7 @@
 {% macro size_fields(amount='', unit='') %}
   <div class="input-group">
     <input class="form-control" name="size_amount" inputmode="decimal" placeholder="Amount" value="{{ amount }}" style="max-width:7rem">
-    <select class="form-select" name="size_unit">
+    <select class="form-select plain-select" name="size_unit">
       <option value="">—</option>
       {% for u in unit_choices %}<option value="{{ u }}" {% if u == unit %}selected{% endif %}>{{ u }}</option>{% endfor %}
     </select>
