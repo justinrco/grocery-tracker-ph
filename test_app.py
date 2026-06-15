@@ -163,6 +163,30 @@ def test_gallon_unit_price_compares_with_litres(client):
     assert parse_size_string("5 gal") == (Decimal("5"), "gallon")
 
 
+def test_ounce_units_compare_within_family(client):
+    from models import parse_size_string
+
+    # mass: oz vs g
+    oz = _make_product("Chips oz", size_amount=Decimal("8"), size_unit="oz")
+    assert oz.unit_family == "mass"
+    assert oz.unit_label == "/100g"
+    # 8 oz = 226.796185 g → ₱100 / pack ≈ ₱44.0925 / 100g
+    assert round(oz.unit_price(Decimal("100")), 4) == Decimal("44.0925")
+
+    # volume: fl oz vs mL
+    floz = _make_product("Juice floz", size_amount=Decimal("12"), size_unit="fl oz")
+    assert floz.unit_family == "volume"
+    assert floz.unit_label == "/100mL"
+    # 12 fl oz = 354.882... mL → ₱50 ≈ ₱14.0892 / 100mL
+    assert round(floz.unit_price(Decimal("50")), 4) == Decimal("14.0892")
+
+    # free-text parsing, including the fluid/weight distinction
+    assert parse_size_string("8 oz") == (Decimal("8"), "oz")
+    assert parse_size_string("12 fl oz") == (Decimal("12"), "fl oz")
+    assert parse_size_string("16 FL OZ") == (Decimal("16"), "fl oz")
+    assert parse_size_string("500 ounces") == (Decimal("500"), "oz")
+
+
 def test_unit_price_is_none_without_structured_size(client):
     p = Product(name="Mystery", size="big")
     db.session.add(p)

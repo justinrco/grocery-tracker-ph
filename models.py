@@ -31,13 +31,15 @@ def _enable_sqlite_fk(dbapi_connection, connection_record):
 # (family, multiplier_to_base, base_unit_label, per_n_of_base_for_display)
 # e.g. kg → mass family, 1000g per kg, display "₱X / 100g".
 UNIT_INFO = {
-    "g":     ("mass",   Decimal(1),             "g",     Decimal(100)),
-    "kg":    ("mass",   Decimal(1000),          "g",     Decimal(100)),
-    "mL":    ("volume", Decimal(1),             "mL",    Decimal(100)),
-    "L":     ("volume", Decimal(1000),          "mL",    Decimal(100)),
-    "gallon":("volume", Decimal("3785.411784"), "mL",    Decimal(100)),  # US gallon
-    "piece": ("count",  Decimal(1),             "piece", Decimal(1)),
-    "pack":  ("count",  Decimal(1),             "pack",  Decimal(1)),
+    "g":     ("mass",   Decimal(1),               "g",     Decimal(100)),
+    "kg":    ("mass",   Decimal(1000),            "g",     Decimal(100)),
+    "oz":    ("mass",   Decimal("28.349523125"),  "g",     Decimal(100)),  # avoirdupois ounce
+    "mL":    ("volume", Decimal(1),               "mL",    Decimal(100)),
+    "L":     ("volume", Decimal(1000),            "mL",    Decimal(100)),
+    "fl oz": ("volume", Decimal("29.5735295625"), "mL",    Decimal(100)),  # US fluid ounce
+    "gallon":("volume", Decimal("3785.411784"),   "mL",    Decimal(100)),  # US gallon
+    "piece": ("count",  Decimal(1),               "piece", Decimal(1)),
+    "pack":  ("count",  Decimal(1),               "pack",  Decimal(1)),
 }
 UNIT_CHOICES = list(UNIT_INFO.keys())
 
@@ -51,22 +53,27 @@ def parse_size_string(text):
     if not text:
         return None, None
     m = re.match(
-        r"^\s*(\d+(?:\.\d+)?)\s*(kg|gallons?|gals?|g|ml|mL|ML|L|l|pcs?|piece|pack)\s*$",
+        r"^\s*(\d+(?:\.\d+)?)\s*"
+        r"(kg|gallons?|gals?|fl\s*oz|floz|fluid\s*ounces?|oz|ounces?|g|ml|L|l|pcs?|piece|pack)"
+        r"\s*$",
         text,
+        re.IGNORECASE,
     )
     if not m:
         return None, None
     amount = Decimal(m.group(1))
-    raw = m.group(2)
+    # Normalize: lower-case and collapse internal whitespace ("FL OZ" -> "fl oz").
+    key = re.sub(r"\s+", " ", m.group(2).strip().lower())
     normalize = {
         "g": "g", "kg": "kg",
-        "ml": "mL", "mL": "mL", "ML": "mL",
-        "l": "L", "L": "L",
+        "ml": "mL", "l": "L",
         "gal": "gallon", "gals": "gallon", "gallon": "gallon", "gallons": "gallon",
+        "oz": "oz", "ounce": "oz", "ounces": "oz",
+        "fl oz": "fl oz", "floz": "fl oz", "fluid ounce": "fl oz", "fluid ounces": "fl oz",
         "pc": "piece", "pcs": "piece", "piece": "piece",
         "pack": "pack",
     }
-    return amount, normalize.get(raw)
+    return amount, normalize.get(key)
 
 
 def _format_amount(amount):
