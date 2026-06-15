@@ -34,7 +34,7 @@
   </div>
 </div>
 
-<div class="collapse mb-4" id="editProduct">
+<div class="collapse mb-4{% if request.args.get('edit') %} show{% endif %}" id="editProduct">
   <div class="card card-body">
     <form method="post" action="{{ url_for('edit_product', product_id=product.id) }}" class="row g-2">
       <div class="col-md-4"><label class="form-label">Name</label><input class="form-control" name="name" value="{{ product.name }}" required></div>

@@ -97,6 +97,9 @@
         </td>
         <td class="text-muted small">{{ entry.updated_at | humanize }}</td>
         <td class="text-end" style="white-space:nowrap">
+          <button class="btn btn-sm btn-outline-secondary" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#editPrice{{ entry.id }}">Edit price</button>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('product_detail', product_id=entry.product.id, edit=1) }}#editProduct">Edit product</a>
           <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('product_history', product_id=entry.product.id, store=store.id) }}">History</a>
           <form class="d-inline" method="post" action="{{ url_for('remove_product_from_store') }}"
                 onsubmit="return confirm('Remove “{{ entry.product.display_name }}” and ALL its price history from {{ store.name }}?');">
@@ -104,6 +107,19 @@
             <input type="hidden" name="product_id" value="{{ entry.product.id }}">
             <button class="btn btn-sm btn-outline-danger">Remove</button>
           </form>
+        </td>
+      </tr>
+      <tr class="p-0">
+        <td colspan="6" class="p-0 border-0">
+          <div class="collapse" id="editPrice{{ entry.id }}">
+            <form class="row g-2 align-items-center bg-light rounded p-2 m-1" method="post"
+                  action="{{ url_for('edit_price', price_id=entry.id) }}">
+              <div class="col-auto"><label class="col-form-label small">Correct this price for “{{ entry.product.display_name }}” (₱)</label></div>
+              <div class="col-auto"><input class="form-control form-control-sm" style="width:8rem" name="price" inputmode="decimal" value="{{ '%.2f'|format(entry.price) }}" required></div>
+              <div class="col-auto"><button class="btn btn-sm btn-success">Save</button></div>
+              <div class="col-auto"><button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#editPrice{{ entry.id }}">Cancel</button></div>
+            </form>
+          </div>
         </td>
       </tr>
       {% endfor %}

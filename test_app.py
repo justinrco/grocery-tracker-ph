@@ -115,6 +115,47 @@ def test_record_price_route_appends_history(client):
     assert latest[0].price == Decimal("40.00")  # newest wins as "current"
 
 
+def test_edit_price_corrects_observation_in_place(client):
+    store = _make_store("SM")
+    product = _make_product()
+    client.post("/prices", data={"store_id": store.id, "product_id": product.id, "price": "500"})
+    entry = PriceEntry.query.filter_by(store_id=store.id, product_id=product.id).one()
+
+    client.post(f"/prices/{entry.id}/edit", data={"price": "50"})
+
+    refreshed = db.session.get(PriceEntry, entry.id)
+    assert refreshed.price == Decimal("50.00")          # value corrected
+    assert refreshed.id == entry.id                      # same row, not a new one
+    # still exactly one observation — corrected, not appended
+    assert PriceEntry.query.filter_by(store_id=store.id, product_id=product.id).count() == 1
+
+
+def test_edit_product_updates_all_fields_and_history_reflects_it(client):
+    store = _make_store("SM")
+    product = _make_product(name="Pancit Caton", brand="Lucky", size_amount=Decimal("60"), size_unit="g")
+    db.session.add(PriceEntry(store_id=store.id, product_id=product.id, price=Decimal("12")))
+    db.session.commit()
+
+    # Correct a misspelled name/brand and fix the size + category.
+    client.post(f"/products/{product.id}/edit", data={
+        "name": "Pancit Canton", "brand": "Lucky Me",
+        "size_amount": "55", "size_unit": "g", "category": "Noodles",
+    })
+
+    p = db.session.get(Product, product.id)
+    assert p.name == "Pancit Canton"
+    assert p.brand == "Lucky Me"
+    assert p.size_amount == Decimal("55")
+    assert p.size_unit == "g"
+    assert p.category == "Noodles"
+
+    # The existing price observation now reflects the corrected product details,
+    # and its unit price recomputes from the corrected size (₱12 / 55g → /100g).
+    entry = PriceEntry.query.filter_by(product_id=product.id).one()
+    assert entry.product.display_name == "Lucky Me Pancit Canton (55 g)"
+    assert round(entry.unit_price, 4) == round(Decimal("12") / Decimal("55") * 100, 4)
+
+
 def test_remove_product_from_store_deletes_all_observations(client):
     store = _make_store("SM")
     other = _make_store("Puregold")

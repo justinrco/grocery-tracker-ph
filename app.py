@@ -508,6 +508,27 @@ def register_routes(app):
         flash("Removed that observation.", "success")
         return redirect(request.referrer or url_for("store_detail", store_id=store_id))
 
+    @app.route("/prices/<int:price_id>/edit", methods=["POST"])
+    def edit_price(price_id):
+        """Correct a single price observation in place (e.g. a mis-typed amount).
+
+        This mutates the existing row rather than appending, so the history holds
+        the corrected value instead of keeping the wrong one. The observation's
+        timestamp is preserved.
+        """
+        entry = db.session.get(PriceEntry, price_id) or abort(404)
+        price = _parse_price(request.form.get("price"))
+        if price is None:
+            flash("Enter a valid non-negative price.", "danger")
+        else:
+            entry.price = price
+            db.session.commit()
+            flash(
+                f"Updated price for “{entry.product.display_name}” to {peso_str(price)}.",
+                "success",
+            )
+        return redirect(request.referrer or url_for("store_detail", store_id=entry.store_id))
+
     @app.route("/prices/remove", methods=["POST"])
     def remove_product_from_store():
         """Remove a product from a store entirely (deletes all its observations)."""
