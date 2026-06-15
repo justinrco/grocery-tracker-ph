@@ -277,8 +277,12 @@ def register_routes(app):
     @app.route("/stores/<int:store_id>")
     def store_detail(store_id):
         store = db.session.get(Store, store_id) or abort(404)
-        prices = latest_prices_for_store(store.id)
-        products = Product.query.order_by(Product.name).all()
+        # Sort both lists by the displayed label (brand + name + size), case-insensitive.
+        prices = sorted(
+            latest_prices_for_store(store.id),
+            key=lambda e: e.product.display_name.lower(),
+        )
+        products = sorted(Product.query.all(), key=lambda p: p.display_name.lower())
         return render_template(
             "store_detail.html",
             store=store,
@@ -330,7 +334,8 @@ def register_routes(app):
                     Product.category.ilike(like),
                 )
             )
-        products = query.order_by(Product.name).all()
+        # Sort by the displayed label (brand + name + size), case-insensitive.
+        products = sorted(query.all(), key=lambda p: p.display_name.lower())
         # Per-product store counts (distinct stores with at least one price).
         counts = dict(
             db.session.query(
